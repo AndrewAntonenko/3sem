@@ -5,11 +5,25 @@
 #include <ctime>
 #include <cstring>
 
+/*
+fixit: добавьте комментарием в код данные об ускорении
+в зависимости от числа нитей.
+p.s. не уверен, что для матриц 20*20 ускорение получится увидеть
+*/
+
 #define MatrixSize 20
 typedef double MatrixElem_t;
 const int nThreads = 5;
+
+/*
+fixit: странное название для структуры...получается, что матрица содержит внутри ещё две
+нужно другое название
+*/
 struct matrix{
     int count;
+    /*
+    fixit: не уверен, что матрицы больших размеров (>1000*1000, для которых будет видно ускорение) получится выделить на стеке
+    */
     MatrixElem_t A[MatrixSize][MatrixSize] ;
     MatrixElem_t B[MatrixSize][MatrixSize] ;
 };
@@ -36,6 +50,9 @@ inline void freeptr(void** ptr){
         }
     }
      for (int l = 1; l < nThreads; ++l) {
+         /*
+         fixit: не нужно хранить nThreads копий исходных матриц. хватит одной копии
+         */
          memcpy(ArrMatrix[l].A, ArrMatrix[0].A, sizeof(MatrixElem_t) * MatrixSize * MatrixSize );
          memcpy(ArrMatrix[l].B, ArrMatrix[0].B, sizeof(MatrixElem_t) * MatrixSize * MatrixSize );
      }
