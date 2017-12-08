@@ -5,9 +5,17 @@
 char**	split(char*, int*);
 
 char* readtxt(long* length);
+
+/*
+fixit: дайте более ясное название для ф-и.
+неясно, зачем нужна, и что именно делает + можете добавить комментарий
+*/
 char** doArr(char* buf, int* nStrings, long length);
 
-
+/*
+fixit: если вам нужен некий путь на вход программы, то передайте его через аргументы командной строки.
+вряд ли у кого-то кроме вас на компьютере будет такой путь.
+*/
 const char *pathIn = "/home/andrew/CLionProjects/exec/configuration.txt";
 
 int main(int argc, const char *argv[]) {
@@ -22,7 +30,7 @@ int main(int argc, const char *argv[]) {
         perror("Less arguments, than expected ");
         exit(-1);
     }
-    for (i = 1;i <= nFunc; i++)
+    for (i = 1; i <= nFunc; i++)
     {
         char** pString = split(text[i], &nStrings);
         int  time = atoi(pString[nStrings - 1]);
@@ -45,7 +53,16 @@ int main(int argc, const char *argv[]) {
         }
         free(pString);
     }
+    
+    /*
+    fixit: неясен смысл этого sleep'а ...
+    вероятно хотели добиться того, чтобы запускающий родительский процесс
+    дождался завершения всех детей? тогда нужно wait использовать
+    */
     sleep(fatherSleep + 1);
+    /*
+    fixit: не уверен, что почистили всю выделенную память
+    */
     free(text);
     return 0;
 }
@@ -61,6 +78,10 @@ char** split (char* s, int * length){
         perror("Calloc error");
         exit(-1);
     }
+    /*
+    fixit: разделителем могут быть ещё и символы табуляции, например
+    сделайте строку с разделителями параметром ф-и split
+    */
     point = strtok (s, " ");
     while (point != NULL)
     {
@@ -106,6 +127,9 @@ char* readtxt( long* length){
 
 char** doArr(char* buf, int* nStrings, long length){
     int i = 0;
+    /*
+    fixit: что за константа -5?
+    */
     for (i = 0; i < length - 5; i++) {
         if (buf[i] == '\n') {
             (*nStrings)++;
