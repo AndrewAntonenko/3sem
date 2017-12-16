@@ -54,10 +54,8 @@ enum Result search(char *path, int deep, const char *file, char *answer) {
             strcpy(answer, path);
             return success;
         }
-    }
-    rewinddir(dir);
-    while ((current = readdir(dir)) != NULL) {
-        if (current->d_type == 4 && strcmp(".", current->d_name) && strcmp("..", current->d_name)) {
+        if (current->d_type == 4 && strcmp(".", current->d_name)
+            && strcmp("..", current->d_name)) {
             append(path, current->d_name);
             success = search(path, deep - 1, file, answer);
             if (success) {
