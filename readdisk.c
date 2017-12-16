@@ -46,26 +46,30 @@ enum Result search(char *path, int deep, const char *file, char *answer) {
         return !success;
     }
     if ((dir = opendir(path)) == NULL) {
-        perror("Can't open directory");
-        exit(EXIT_FAILURE);
+        perror("Can't open directory in search function");
+        return EXIT_FAILURE;
     }
-    while ((current = readdir(dir)) != NULL) {
+    int count = 0;
+    while ((current = readdir(dir))) {
         if (!strcmp(current->d_name, file)) {
             strcpy(answer, path);
-            return success;
+            printf("File %s was found in %s directory\n", file, answer);
+	    count ++;	
         }
         if (current->d_type == 4 && strcmp(".", current->d_name)
             && strcmp("..", current->d_name)) {
             append(path, current->d_name);
             success = search(path, deep - 1, file, answer);
             if (success) {
-                return success;
+                printf("File %s was found in %s directory\n", file, answer);
+		count ++;
             } else {
                 toParentDir(path);
             }
         }
     }
-    return NotFound;
+    if (count) return Found;
+    else return NotFound;
 }
 
 /*
@@ -84,10 +88,9 @@ int main(int argc, char **argv) {
     strcpy(directory, argv[1]);
     strcpy(file, argv[3]);
 
-    if (search(directory, depth, file, answer))
-        printf("File %s was founded in %s directory\n", file, answer);
-    else
-        printf("File %s was not founded\n", file);
+    if (!search(directory, depth, file, answer))
+        printf("File %s wasn't found in %s directory\n", file, answer);
+
     free(directory);
     free(answer);
     free(file);
