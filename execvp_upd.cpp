@@ -4,146 +4,110 @@
 #include <sys/wait.h>
 
 
-char**	split(char*, int*);
-char* readtxt(long* length, const char*);
-/*Функция читает строку из файла */
-char** doArr(char* buf, int* nStrings, long length);
-int Exec(char** text, int nFunc, int nStrings);
+char **split(char *, int *);
+
+char **readtxt(FILE *text);
 
 
-int main(int argc, const char *argv[]) {
-    const char *pathIn = argv[2];
-    int nFunc = 0;
-    long length = 0;
-    char* buf = readtxt(&length, pathIn);
-    printf("%s", buf);
-    int nStrings = 0;int exit_code = 0;
-    char** text = doArr(buf, &nStrings, length);
-     if ((nFunc = atoi(text[0])) < 0) {
-        perror("Less arguments, than expected ");
-        exit(-1);
+int main(int argc, char *argv[]) {
+    int words = 0, i = 0;
+    FILE* text = fopen(argv[1], "r");
+    char** ptrarr = readtxt(text);
+    fclose(text);
+    int amount = strtol(ptrarr[0], NULL, 10);
+    pid_t id[amount];
+    for (i = 0; i < amount; i++) {
+        char **dictionary = split(ptrarr[i + 1], &words);
+        int time = atoi(dictionary[words - 1]);
+        dictionary[words - 1] = (char *) NULL;
+        id[i] = fork();
+        if (id[i] == 0) {
+            sleep(time);
+            printf("process %d, running new programm\n", i + 1);
+            execvp(dictionary[0], dictionary);
+            perror("exec failed");
+            exit(-1);
+        } else if (id[i] == -1) {
+            perror("fork failed");
+            exit(EXIT_FAILURE);
+        }
+        free(dictionary);
     }
-    Exec(text, nFunc, nStrings);
-    free(buf);
-    free(text);
+    for (i = 0; i < amount; i++)
+        waitpid(id[i], 0, 0);
+    free(ptrarr);
     return 0;
 }
 
 
-char** split (char* s, int * length ){
+char **split(char *s, int *length) {
     int counter = 1, i = 0;
-    char** head;
-    char* point;
+    char **head;
+    char *point;
     errno = 0;
-    if (!(head = (char**) calloc (1, sizeof(char*))))
-    {
+    if (!(head = (char **) calloc(1, sizeof(char *)))) {
         perror("Calloc error");
         exit(EXIT_FAILURE);
     }
-    char* delim = "    ;,.:";
-    point = strtok (s, delim);
-    while (point != NULL)
-    {
-        if (i + 2 >= counter)
-        {
+    char *delim = "    ;,.:";
+    point = strtok(s, delim);
+    while (point != NULL) {
+        if (i + 2 >= counter) {
             counter *= 2;
-            if (!(head = (char**) realloc (head,  counter * sizeof(char*))))
-            {
+            if (!(head = (char **) realloc(head, counter * sizeof(char *)))) {
                 printf("realloc: error: %s\n", strerror(errno));
                 exit(-1);
             }
         }
         head[i] = point;
         i++;
-        point = strtok (NULL, " ");
+        point = strtok(NULL, " ");
     }
     *length = i;
-    head[i] = (char*) NULL;
+    head[i] = (char *) NULL;
     return head;
 }
 
-char* readtxt( long* length, const char* PathIn){
-    FILE* fileIn;
-    if ((fileIn = fopen(PathIn, "r")) == NULL) {
-        perror("Error of opening file");
-        exit(-1);
+char **readtxt(FILE *text) {
+    int i = 0, j = 1, count = 0;
+    long int length = 0;
+    char **ptrarr;
+    char *filestring;
+    errno = 0;
+    if (fseek(text, 0, SEEK_END) == -1) {
+        perror("fseek crush");
+        exit(EXIT_FAILURE);
     }
-    if (fseek(fileIn, 0, SEEK_END) != 0) {
-        perror("Error of fseek");
-        exit(1);
+    length = ftell(text);
+    rewind(text);
+    if (!(filestring = (char *) calloc(length + 1, sizeof(char)))) {
+        perror("calloc error");
+        exit(EXIT_FAILURE);
     }
-    *length = ftell(fileIn);
-    rewind(fileIn);
-
-    printf("length = %ld\n", *length);
-    char *buf = (char *) calloc(*length, sizeof(char));
-    if ( fread(buf, sizeof(char), *length, fileIn) <= 0) {
-        perror("Error of reading text");
-        exit(2);
+    if ((fread(filestring, sizeof(char), length, text)) != length) {
+        perror("read wrong");
+        exit(EXIT_FAILURE);
     }
-    fclose(fileIn);
-    return buf;
+    filestring[length] = '\n';
+    for (i = 0; i < length + 1; i++) {
+        if (filestring[i] == '\n') {
+            count++;
+        }
+    }
+    filestring[length] = '\0';
+    if (!(ptrarr = (char **) calloc(count, sizeof(char *)))) {
+        perror("Calloc error: ");
+        exit(EXIT_FAILURE);
+    }
+    ptrarr[0] = &(filestring[0]);
+    for (i = 0; i < length; i++) {
+        if (filestring[i] == '\n') {
+            filestring[i] = '\0';
+            ptrarr[j] = &(filestring[i + 1]);
+            j++;
+        }
+    }
+    return ptrarr;
 }
 
-char** doArr(char* buf, int* nStrings, long length){
-    int i = 0;
-    for (i = 0; i < length - 1; i++) {
-        if (buf[i] == '\n') {
-            (*nStrings)++;
 
-        }
-    }
-    printf("File consists of %d strings.\n\n\n", *nStrings);
-    char **text = (char **) calloc(*nStrings + 1, sizeof(*text));
-    if (text == NULL) {
-        perror("Error of creating array 'text'");
-        exit(-2);
-    }
-    int line = 1;
-    text[0] = buf;
-    for (i = 1; i < length - 1; i++) {
-        if (buf[i] == '\n') {
-            text[line] = buf + i + 1;
-            buf[i] = '\0';
-            line++;
-        }
-    }
-    return text;
-}
-
-int Exec(char** text, int nFunc, int nStrings){
-    int i =0, fatherSleep = 0, exit_code = -1;
-    for (i = 1;i <= nFunc; i++) {
-        char **pString = split(text[i], &nStrings);
-        int time = atoi(pString[nStrings - 1]);
-        pString[nStrings - 1] = (char *) NULL;
-        if (fatherSleep < time)
-            fatherSleep = time;
-        pid_t cpid = fork();
-        switch (cpid) {
-            case -1:
-                perror("fork failed");
-                exit(EXIT_FAILURE);
-            case 0:
-                sleep(time);
-                printf("process %d, running new programm\n", i);
-                execvp(pString[0], pString);
-                perror("exec failed");
-                exit_code = 37;
-                exit(exit_code);
-            default:
-                exit_code = 0;
-                break;
-        }
-        free(pString);
-
-        if (cpid) {
-            int stat_val;
-            pid_t child_pid = wait(&stat_val);
-            if (WIFEXITED(stat_val))
-                printf("Child exited with code %d \n", WEXITSTATUS(stat_val));
-            else printf("Child terminated abnormally\n");
-        }
-
-    }
-}
